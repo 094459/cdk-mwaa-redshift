@@ -1,0 +1,11 @@
+# --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.4.3/constraints-3.10.txt"
+
+--constraint "/usr/local/airflow/dags/updated-constraints.txt"
+apache-airflow-providers-amazon==7.3.0
+apache-airflow-providers-mysql==3.2.1
+apache-airflow-providers-common-sql==1.3.4
+
+
+#cython==0.29.21
+#pyarrow==2.0.0
+#awswrangler==2.4.0

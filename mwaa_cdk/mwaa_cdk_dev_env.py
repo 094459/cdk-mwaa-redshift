@@ -1,6 +1,6 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
-
+import aws_cdk as cdk 
 from aws_cdk import (
     aws_iam as iam,
     aws_ec2 as ec2,
@@ -9,8 +9,7 @@ from aws_cdk import (
     aws_mwaa as mwaa,
     aws_kms as kms,
     Stack,
-    CfnOutput,
-    Tags
+    CfnOutput
 )
 from constructs import Construct
 
@@ -23,22 +22,28 @@ class MwaaCdkStackDevEnv(Stack):
 
         # Create MWAA S3 Bucket and upload local dags
 
-        s3_tags = {
-            'env': f"{mwaa_props['mwaa_env']}-dev",
-            'service': 'MWAA Apache AirFlow'
-        }
+        #s3_tags = {
+        #    'env': f"{mwaa_props['mwaa_env']}-dev",
+        #    'service': 'MWAA Apache AirFlow'
+        #}
 
-        dags_bucket = s3.Bucket(
+        #dags_bucket = s3.Bucket(
+        #    self,
+        #    "mwaa-dags",
+        #    bucket_name=f"{mwaa_props['dagss3location'].lower()}-dev",
+        #    versioned=True,
+        #    block_public_access=s3.BlockPublicAccess.BLOCK_ALL
+        #)
+        #for tag in s3_tags:
+        #    Tags.of(dags_bucket).add(tag, s3_tags[tag])
+
+        dags_bucket = s3.Bucket.from_bucket_name(
             self,
-            "mwaa-dags",
-            bucket_name=f"{mwaa_props['dagss3location'].lower()}-dev",
-            versioned=True,
-            block_public_access=s3.BlockPublicAccess.BLOCK_ALL
+            "mwaa-s3-dag-bucket",
+            bucket_name=f"{mwaa_props['dagss3location'].lower()}-dev"
         )
 
-        for tag in s3_tags:
-            Tags.of(dags_bucket).add(tag, s3_tags[tag])
-
+        
         dags_bucket_arn = dags_bucket.bucket_arn
 
         # Create MWAA IAM Policies and Roles, copied from MWAA documentation site
@@ -91,6 +96,16 @@ class MwaaCdkStackDevEnv(Stack):
                     ],
                     effect=iam.Effect.ALLOW,
                     resources=["*"],
+                ),
+                iam.PolicyStatement(
+                    actions=[
+                        "redshift-data:GetStatementResult",
+                        "redshift-data:CancelStatement",
+                        "redshift-data:DescribeStatement",
+                        "redshift-data:ListStatements"
+                    ],
+                    effect=iam.Effect.ALLOW,
+                    resources=[f"arn:aws:redshift:{self.region}:{self.account}:cluster:{mwaa_props['redshiftclustername']}*"],
                 ),
                 iam.PolicyStatement(
                     actions=[
@@ -153,7 +168,6 @@ class MwaaCdkStackDevEnv(Stack):
             assumed_by=iam.CompositePrincipal(
                 iam.ServicePrincipal("airflow.amazonaws.com"),
                 iam.ServicePrincipal("airflow-env.amazonaws.com"),
-                iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
             ),
             inline_policies={"CDKmwaaPolicyDocument": mwaa_policy_document},
             path="/service-role/"
@@ -183,19 +197,22 @@ class MwaaCdkStackDevEnv(Stack):
         )
         mwaa_service_role.attach_inline_policy(mwaa_secrets_policy_document)
 
+        redshift_managed_policy = iam.ManagedPolicy.from_aws_managed_policy_name('AmazonRedshiftAllCommandsFullAccess')
+        mwaa_service_role.add_managed_policy(redshift_managed_policy)
+
 
         # Create MWAA Security Group and get networking info
 
-        security_group = ec2.SecurityGroup(
+        self.security_group = ec2.SecurityGroup(
             self,
             id = "mwaa-sg-dev",
             vpc = vpc,
             security_group_name = "mwaa-sg-dev"
         )
 
-        security_group_id = security_group.security_group_id
+        security_group_id = self.security_group.security_group_id
 
-        security_group.connections.allow_internally(ec2.Port.all_traffic(),"MWAA-dev")
+        self.security_group.connections.allow_internally(ec2.Port.all_traffic(),"MWAA-dev")
 
         subnets = [subnet.subnet_id for subnet in vpc.private_subnets]
         network_configuration = mwaa.CfnEnvironment.NetworkConfigurationProperty(
@@ -317,7 +334,8 @@ class MwaaCdkStackDevEnv(Stack):
             #plugins_s3_object_version=None,
             #plugins_s3_path=None,
             #requirements_s3_object_version=None,
-            #requirements_s3_path=None,
+            #requirements.txt file is uploaded to the requirements folder
+            requirements_s3_path='requirements/requirements.txt',
             source_bucket_arn=dags_bucket_arn,
             webserver_access_mode='PUBLIC_ONLY',
             #weekly_maintenance_window_start=None
@@ -332,3 +350,4 @@ class MwaaCdkStackDevEnv(Stack):
             value=security_group_id,
             description="Security Group name used by MWAA"
         )
+

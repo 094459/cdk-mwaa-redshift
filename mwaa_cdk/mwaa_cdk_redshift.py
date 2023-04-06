@@ -11,7 +11,7 @@ from constructs import Construct
 
 class MwaaRedshiftStack(Stack):
 
-    def __init__(self, scope: Construct, id: str, vpc, mwaa_props, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, vpc, mwaa_props, mwaa_sg, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # create s3 bucket that redshift will use. if this bucket exists
@@ -29,7 +29,7 @@ class MwaaRedshiftStack(Stack):
 
         # get arn of dags bucket - not sure if this is needed so may remove
         
-        dags_bucket = s3.Bucket.from_bucket_name(self, "mwaa-dag-bucket", f"{mwaa_props['mwaadag'].lower()}")
+        dags_bucket = s3.Bucket.from_bucket_name(self, "mwaa-dag-bucket", f"{mwaa_props['dagss3location'].lower()}")
         dags_bucket_arn = dags_bucket.bucket_arn
 
         # create redshift secret and redshift user
@@ -82,7 +82,7 @@ class MwaaRedshiftStack(Stack):
         mwaa_security_group = ec2.SecurityGroup.from_security_group_id(
             self,
             "SG",
-            mwaa_props['mwaa-sg']
+            mwaa_sg.security_group_id,
             #mutable=False
             )
         mwaa_security_group.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(5439), "allow redshift access")
@@ -100,20 +100,9 @@ class MwaaRedshiftStack(Stack):
             description="Redshift Cluster Subnet Group"
         )
 
-        ## get all the subnet ids from the MWAA VPC
-
-        #mwaavpc = ec2.Vpc.from_lookup(
-        #    self,
-        #    "MWAA VPC",
-            # if you have deployed in a different VPC then use this instead
-            # vpc_id=props['mwaa-vpc-id']
-        #    vpc_id=vpc
-        #)
-
         vpe_redshift_cluster_subnet_group = redshift.ClusterSubnetGroup(
             self,
             "MWAAVPERedshiftCSG",
-            #vpc = mwaavpc,
             vpc = vpc,
             description="MWAA VPE Redshift Cluster Subnet Group"
         )
@@ -172,6 +161,6 @@ class MwaaRedshiftStack(Stack):
         CfnOutput(
             self,
             id="redshiftvpcendpointcli",
-            value="aws redshift create-endpoint-access --cluster-identifier "+redshiftclustername+" --resource-owner "+self.account+ " --endpoint-name mwaa-redshift-endpoint --subnet-group-name "+vpe_redshift_cluster_subnet_group.cluster_subnet_group_name+" --vpc-security-group-ids "+mwaa_props['mwaa-sg'],
+            value="aws redshift create-endpoint-access --cluster-identifier "+redshiftclustername+" --resource-owner "+self.account+ " --endpoint-name mwaa-redshift-endpoint --subnet-group-name "+vpe_redshift_cluster_subnet_group.cluster_subnet_group_name+" --vpc-security-group-ids "+mwaa_sg.security_group_id,
             description="Use this command to create your vpce"
         )        

@@ -4,17 +4,15 @@
 2. Deploy the CDK stacks using the following command:
 
 ```
+cdk deploy mwaa-demo-utils
 cdk deploy mwaa-demo-vpc
 cdk deploy mwaa-demo-dev-environment
-```
-
-Update the app.py to set the "mwaa-sg" and "mwaa-vpc-id" values. I will fix this soon, just did not want to tie these too closely together for this quick demo
-
-```
 cdk deploy mwaa-demo-redshift
 ```
 
-The deployment will take around 25-30 minutes to complete.
+The deployment will take around 25-30 minutes to complete. You will end up with a MWAA environment running 2.4.3 and with updated Amazon Providers (see below), and an Amazon Redshift cluster. Amazon S3 buckets will be created, and the contents of the repo DAGS folder will be uploaded.
+
+To use the sample Redshift data, please follow the instructions here - https://docs.aws.amazon.com/redshift/latest/gsg/rs-gsg-create-sample-db.html
 
 **Updated Providers**
 
@@ -22,10 +20,12 @@ Use the updated constraints file (deploy to DAGS folder) and the requirements.tx
 
 **To uninstall**
 
-You will need to manually delete the S3 bucket that was created for your DAGs, and then use CDK to uninstall
+To remove all the resources deployed, use the following
 
 ```
 cdk destroy mwaa-demo-redshift
 cdk destroy mwaa-demo-dev-environment
 cdk destroy mwaa-demo-vpc
 ```
+
+You will need to manually delete the S3 buckets.

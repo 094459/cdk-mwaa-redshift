@@ -9,7 +9,7 @@ from mwaa_cdk.mwaa_cdk_utils import MwaaCdkStackUtils
 from mwaa_cdk.mwaa_cdk_dev_env import MwaaCdkStackDevEnv
 from mwaa_cdk.mwaa_cdk_redshift import MwaaRedshiftStack
 
-env_EU=cdk.Environment(region="eu-west-1", account="XXXXXXXXX")
+env_EU=cdk.Environment(region="eu-west-1", account="704533066374")
 mwaa_props = {
     'dagss3location': 'mwaa-243-094459-demo',
     'mwaa_env' : 'mwaa-243-demo',

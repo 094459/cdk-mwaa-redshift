@@ -20,23 +20,6 @@ class MwaaCdkStackDevEnv(Stack):
 
         key_suffix = 'Key'
 
-        # Create MWAA S3 Bucket and upload local dags
-
-        #s3_tags = {
-        #    'env': f"{mwaa_props['mwaa_env']}-dev",
-        #    'service': 'MWAA Apache AirFlow'
-        #}
-
-        #dags_bucket = s3.Bucket(
-        #    self,
-        #    "mwaa-dags",
-        #    bucket_name=f"{mwaa_props['dagss3location'].lower()}-dev",
-        #    versioned=True,
-        #    block_public_access=s3.BlockPublicAccess.BLOCK_ALL
-        #)
-        #for tag in s3_tags:
-        #    Tags.of(dags_bucket).add(tag, s3_tags[tag])
-
         dags_bucket = s3.Bucket.from_bucket_name(
             self,
             "mwaa-s3-dag-bucket",
@@ -96,6 +79,19 @@ class MwaaCdkStackDevEnv(Stack):
                     ],
                     effect=iam.Effect.ALLOW,
                     resources=["*"],
+                ),
+                iam.PolicyStatement(
+                    actions=[
+                        "redshift:Describe*",
+                        "redshift:Create*",
+                        "redshift:ExecuteQuery",
+                        "redshift:EnableLogging",
+                        "redshift:Get*",
+                        "redshift:List*",
+                        "redshift:View"
+                    ],
+                    effect=iam.Effect.ALLOW,
+                    resources=[f"arn:aws:redshift:{self.region}:{self.account}:cluster:{mwaa_props['redshiftclustername']}*"],
                 ),
                 iam.PolicyStatement(
                     actions=[

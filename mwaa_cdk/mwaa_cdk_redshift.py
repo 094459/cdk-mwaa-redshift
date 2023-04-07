@@ -77,17 +77,10 @@ class MwaaRedshiftStack(Stack):
             connection=ec2.Port.tcp(5439)
             )
 
-        # Modify MWAA security group to enable Redshift access
-
-        mwaa_security_group = ec2.SecurityGroup.from_security_group_id(
-            self,
-            "SG",
-            mwaa_sg.security_group_id,
-            #mutable=False
-            )
-        mwaa_security_group.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(5439), "allow redshift access")
+        # Modify security group to enable Redshift access
         
-
+        default_redshift_security_group.add_ingress_rule(ec2.Peer.security_group_id(mwaa_sg.security_group_id), ec2.Port.tcp(5439), "Allow MWAA to access Redshift")
+                
         # create subnet groups - one for RedShift and one for the VPE we will create
         # the VPE subnet will take in parameters we provide that are the subnet-ids
         # of the VPC where MWAA is deployed

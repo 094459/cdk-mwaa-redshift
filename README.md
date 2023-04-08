@@ -1,3 +1,8 @@
+### Amazon Worflows for Apache Workflow and Amazon Redshift
+
+This repo contains example code to go with [this blog post](https://dev.to/aws/working-with-managed-workflows-for-apache-airflow-mwaa-and-amazon-redshift-40nd)
+
+
 ### How to deploy
 
 1. Edit the app.py file to suit your AWS account and update the mwaa_props values to your own (make sure to set a unique S3 bucket)
